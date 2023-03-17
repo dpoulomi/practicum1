@@ -36,7 +36,7 @@ struct arg_struct_malloc
 
 struct arg_struct_free_dump
 {
-	int size;
+	int pageId;
 };
 
 char heap[HEAP_SIZE] = {0};
@@ -44,15 +44,15 @@ block_t allocMemBlocks[MAX_BLOCK];
 
 int blockSize = 0;
 
-char* requestMemoryPageInMainMemory(intptr_t pageId)
+char *requestMemoryPageInMainMemory(intptr_t pageId)
 {
 
 	// pthread_mutex_lock(&lock);
 	// struct arg_struct_free_dump *args = arguments;
 	// printf("test");
 	block_t *currBlock = NULL;
-	char searchedData[6];
-	char* retValue;
+	char searchedData[9] = {0};
+	char *retValue;
 	// char *searchedData ;
 
 	intptr_t address = pageId;
@@ -87,19 +87,63 @@ char* requestMemoryPageInMainMemory(intptr_t pageId)
 			}
 		}
 	}
-	
 
 	else
 	{
-		printf("when data not not found in memory");
-		//strcpy(searchedData, requestMemoryPageInDisk(pageId));
-		char* retValue = requestMemoryPageInDisk(pageId);
+		//page fault happens
+		printf("Data not found in main memory\n");
+		char *retValue = requestMemoryPageInDisk(pageId);
+		for (int i = 0; i < 5; i++)
+		{
+			searchedData[i] = *(retValue + i);
+			// printf("%c\n", searchedData[i]);
+		}
+		// searchedData[5] = '\0';
+		// printf("Gibberish %s\n", searchedData);
 
+		//if the main memory is not full add the retrieved data above
+		//from secondary memory to main memory
+		printf("%d \n", sizeof(searchedData));
+		if(searchedData[0] != NULL && (blockSize < MAX_BLOCK))
+		{
+			struct arg_struct_malloc mallocdata;
+			mallocdata.values = searchedData;
+			mallocdata.size = 4;
+			pm_malloc(&mallocdata);
+		}else{
+			//since no space in main memory we need to replace an exisiting least recently used page
+			//from the main memory.
+			int k = 0;
+			intptr_t pageIdToReplace = getLeastRecentlyUsedPageId();
+			printf("Page id to replace from main memory is %d :\n", pageIdToReplace);
+			char data[4] = {0};
+			for (int i = pageIdToReplace; i < (pageIdToReplace + 4); i++)
+				{
+					// *(searchedData+j) = heap[i];
+					data[k] = heap[i];
+					k++;
+				}
+				// *(searchedData+j) = '\0';
+				// printf("%d", j);
+			data[k] = '\0';
+			printf("Data to be saved to disk due to least recently used %s\n", data);
+			pm_malloc_to_disk(pageIdToReplace, data);
+			struct arg_struct_free_dump  toFreePageId;
+			toFreePageId.pageId = pageIdToReplace;
+			pm_free(&toFreePageId);
+			struct arg_struct_malloc mallocdata;
+			mallocdata.values = searchedData;
+			mallocdata.size = 5;
+			pm_malloc(&mallocdata);
+		}
+
+		// old code
 		// // check fr page fault
-		// // if (searchedData[0] != NULL)
-		// if (sizeof(searchedData) == 5)
+		// if (searchedData[0] != NULL)
+		// // if (sizeof(searchedData) == 5)
 		// {
-		// 	printf("when data not not found in memory and disk and page fault happens");
+		// 	//if not present in 
+		// 	printf("Data not found in memory and disk and page fault happens");
 		// 	intptr_t pageIdToReplace = getLeastRecentlyUsedPageId();
 		// 	char data[4] = {0};
 		// 	strcpy(data, heap[pageIdToReplace]);
@@ -126,9 +170,9 @@ char* requestMemoryPageInMainMemory(intptr_t pageId)
 	// add the least recently used page to disk and the searched page to
 	// back to main memory in place of the recently used memory.
 
-	//updateTimeArray(address, currBlock);
-	// pthread_mutex_unlock(&lock);
-	return retValue;
+	// updateTimeArray(address, currBlock);
+	//  pthread_mutex_unlock(&lock);
+	return searchedData;
 }
 intptr_t getLeastRecentlyUsedPageId()
 {
@@ -169,7 +213,7 @@ void pm_malloc_to_disk(intptr_t pageId, char byteArray[4])
 
 char *requestMemoryPageInDisk(int pageId)
 {
-	printf("read the csv \n");
+	printf("Reading the backing_store.. \n");
 
 	f = fopen("backing_store.csv", "r");
 	if (f == NULL)
@@ -180,28 +224,18 @@ char *requestMemoryPageInDisk(int pageId)
 
 	char buffer[80];
 	int row = 0;
-    int column = 0;
+	int column = 0;
 	char searchedData[5];
 	bool found = false;
 	while (fgets(buffer, 80, f))
 	{
-		printf("read the inside the csv \n");
+		// printf("read the inside the csv \n");
 		column = 0;
-		// If you only need the first column of each row
-		// char *token = strtok(buffer, ", ");
-		// printf("%s\n", token);
-		//*(searchedData+j)
-		// if ((atoi(*(token + 0))) == pageId) {
-		//     // int n = atoi(token);
-		// 	searchedData = &token[1];
-		//     printf("Data is %s\n", searchedData);
-		// }
-
 		// If you need all the values in a row
 		char *token = strtok(buffer, ", ");
 		while (token)
 		{
-			printf("read all the values in a row\n");
+			// printf("read all the values in a row\n");
 			// Just printing each integer here but handle as needed
 			// int n = atoi(token);
 			// printf("%d\n", n);
@@ -250,7 +284,6 @@ char *requestMemoryPageInDisk(int pageId)
 		// 	value = strtok(NULL, ", ");
 		// 	column++;
 		// }
-		
 	}
 	fclose(f);
 	return searchedData;
@@ -467,9 +500,9 @@ void pm_free(void *arguments)
 {
 	pthread_mutex_lock(&lock);
 	struct arg_struct_free_dump *args = arguments;
-	intptr_t address = args->size;
-	assert(blockSize < MAX_BLOCK);
-
+	intptr_t address = args->pageId;
+	// assert(blockSize < MAX_BLOCK);
+	printf("Page id to be freed from main memory is: %d \n", address);
 	for (int i = 0; i < blockSize; i++)
 	{
 		block_t *currBlock = &(allocMemBlocks[i]);
@@ -480,12 +513,15 @@ void pm_free(void *arguments)
 			{
 				currBlock->isFree = 1;								   // Set memory block to free
 				memset(heap + currBlock->address, 0, currBlock->size); // Nullify the bytes
-				currBlock = currBlock->next;						   // Set current to next mem block in chain
+				currBlock = currBlock->next;
+				blockSize = blockSize - 1;						   // Set current to next mem block in chain
 			}
 			pthread_mutex_unlock(&lock);
+			printf("Current blocksize is :%d", blockSize);
 			return;
 		}
 	}
+	
 	pthread_mutex_unlock(&lock);
 
 	return;
@@ -498,7 +534,7 @@ void dump_heap(void *arguments)
 	*/
 	pthread_mutex_lock(&lock);
 	struct arg_struct_free_dump *args = arguments;
-	int size = args->size;
+	int size = args->pageId;
 	// printf("inside dump_heap , %d\n", size);
 	fflush(stdout);
 

@@ -152,18 +152,22 @@ int main()
 	intptr_t searchPageId = 8;
 	// char searchedData[40];
 	char* retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from memory is : %c%c%c%c%c\n", retValue[0], retValue[1], retValue[2], retValue[3], retValue[4]);
-	// printf("retValue : %s\n", retValue);
-	// strcpy(searchedData, retValue);
-
-	// printf("Data from memory is %s \n", searchedData);
+	printf("Data from memory is : %c%c%c%c%c\n", retValue[0], retValue[1], retValue[2], retValue[3], retValue[4]);	
 	// data retreival from disk
-	// intptr_t searchPageId = 44;
+	
 	searchPageId = 44;
-	retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from disk at page id %d is : %s\n", searchPageId, &retValue);
+	retValue = requestMemoryPageInMainMemory(searchPageId);	
+	printf("Data from disk at page id %d is : %c%c%c%c%c\n",searchPageId, retValue[0], retValue[1], 
+	retValue[2], retValue[3], retValue[4],retValue[5],retValue[6],retValue[7],retValue[8]);
 	// strcpy(searchedData, requestMemoryPageInMainMemory(searchPageId));
 	// printf("Data from disk is %s", searchedData);
+
+	searchPageId = 40;
+	retValue = requestMemoryPageInMainMemory(searchPageId);	
+	printf("Data from disk at page id %d is : %c%c%c%c%c\n",searchPageId, retValue[0], retValue[1], 
+	retValue[2], retValue[3], retValue[4],retValue[5],retValue[6],retValue[7],retValue[8]);
+
+	
 
 	
 	pthread_create(&(tid[13]), NULL, &dump_heap, (void *)&dump);

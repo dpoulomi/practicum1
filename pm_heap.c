@@ -19,6 +19,7 @@ intptr_t getLeastRecentlyUsedPageId();
 void pm_malloc_to_disk(intptr_t pageId, char byteArray[]);
 void updateTimeArray(int address, block_t *currBlock);
 int diskPageId = 0;
+char *removeLeading(char *str);
 
 struct MemoryBlock
 {
@@ -83,6 +84,7 @@ char *requestMemoryPageInMainMemory(intptr_t pageId)
 				// 	}
 				// pthread_mutex_unlock(&lock);
 				// printf("Inside : %s \n", searchedData);
+				printf("Size of the searched data from main memory is: %d", strlen(searchedData));
 				return searchedData;
 			}
 		}
@@ -90,7 +92,7 @@ char *requestMemoryPageInMainMemory(intptr_t pageId)
 
 	else
 	{
-		//page fault happens
+		// page fault happens
 		printf("Data not found in main memory\n");
 		char *retValue = requestMemoryPageInDisk(pageId);
 		for (int i = 0; i < 5; i++)
@@ -101,39 +103,41 @@ char *requestMemoryPageInMainMemory(intptr_t pageId)
 		// searchedData[5] = '\0';
 		// printf("Gibberish %s\n", searchedData);
 
-		//if the main memory is not full add the retrieved data above
-		//from secondary memory to main memory
+		// if the main memory is not full add the retrieved data above
+		// from secondary memory to main memory
 		printf("%d \n", sizeof(searchedData));
-		if(searchedData[0] != NULL && (blockSize < MAX_BLOCK))
+		if (searchedData[0] != NULL && (blockSize < MAX_BLOCK))
 		{
 			struct arg_struct_malloc mallocdata;
 			mallocdata.values = searchedData;
 			mallocdata.size = 4;
 			pm_malloc(&mallocdata);
-		}else{
-			//since no space in main memory we need to replace an exisiting least recently used page
-			//from the main memory.
+		}
+		else
+		{
+			// since no space in main memory we need to replace an exisiting least recently used page
+			// from the main memory.
 			int k = 0;
 			intptr_t pageIdToReplace = getLeastRecentlyUsedPageId();
 			printf("Page id to replace from main memory is %d :\n", pageIdToReplace);
 			char data[4] = {0};
 			for (int i = pageIdToReplace; i < (pageIdToReplace + 4); i++)
-				{
-					// *(searchedData+j) = heap[i];
-					data[k] = heap[i];
-					k++;
-				}
-				// *(searchedData+j) = '\0';
-				// printf("%d", j);
+			{
+				// *(searchedData+j) = heap[i];
+				data[k] = heap[i];
+				k++;
+			}
+			// *(searchedData+j) = '\0';
+			// printf("%d", j);
 			data[k] = '\0';
 			printf("Data to be saved to disk due to least recently used %s\n", data);
 			pm_malloc_to_disk(pageIdToReplace, data);
-			struct arg_struct_free_dump  toFreePageId;
+			struct arg_struct_free_dump toFreePageId;
 			toFreePageId.pageId = pageIdToReplace;
 			pm_free(&toFreePageId);
 			struct arg_struct_malloc mallocdata;
 			mallocdata.values = searchedData;
-			mallocdata.size = 5;
+			mallocdata.size = 4;
 			pm_malloc(&mallocdata);
 		}
 
@@ -142,7 +146,7 @@ char *requestMemoryPageInMainMemory(intptr_t pageId)
 		// if (searchedData[0] != NULL)
 		// // if (sizeof(searchedData) == 5)
 		// {
-		// 	//if not present in 
+		// 	//if not present in
 		// 	printf("Data not found in memory and disk and page fault happens");
 		// 	intptr_t pageIdToReplace = getLeastRecentlyUsedPageId();
 		// 	char data[4] = {0};
@@ -225,7 +229,7 @@ char *requestMemoryPageInDisk(int pageId)
 	char buffer[80];
 	int row = 0;
 	int column = 0;
-	char searchedData[5];
+	char searchedData[4];
 	bool found = false;
 	while (fgets(buffer, 80, f))
 	{
@@ -233,6 +237,7 @@ char *requestMemoryPageInDisk(int pageId)
 		column = 0;
 		// If you need all the values in a row
 		char *token = strtok(buffer, ", ");
+		int j = 0;
 		while (token)
 		{
 			// printf("read all the values in a row\n");
@@ -243,50 +248,66 @@ char *requestMemoryPageInDisk(int pageId)
 			{
 				found = true;
 			}
+
 			if (column == 1 && found == true)
 			{
-				// for(int i = 0 ; i < 4; i++)
-				// {
-				// 	searchedData[i] = token[i];
-				// }
+				for(int i = 1 ; i < strlen(token) - 1; i++)
+				{
+					searchedData[j] = token[i];
+					j++;
+				}
 				// searchedData[4] = '\0';
 				// printf("Found data in disk is: %s\n", searchedData);
-				printf("Found data in disk is: %s\n", token);
-				return token;
+
+				// char str1[4] = {0};
+
+				// char *str1 = removeLeading(token);
+
+
+				// printf("Found data in disk is: %s\n", token);
+				printf("Found data in disk is: %s\n", searchedData);
+				printf("Found data in disk is: 1 - %c 2 - %c 3 - %c 4 - %c 5 - %c 6 - %c\n", token[0], token[1], token[2], token[3], token[4],token[5]);
+				printf("size of data from disk is : %d\n", strlen(token));
+			
+				// printf("Found trimmed data  in disk is: %s\n", str1);
+				return searchedData;
 			}
 			// printf("%s\n", token);
 			token = strtok(NULL, ",");
 			column++;
 		}
-
-		// char *value = strtok(buffer, ", ");
-		// while (value)
-		// {
-		// 	// Column 1
-		// 	if (column == 0 && (atoi(*(value + 0))) == pageId)
-		// 	{
-		// 		printf("Name :");
-		// 	}
-
-		// 	// Column 2
-		// 	if (column == 1)
-		// 	{
-		// 		printf("\tAccount No. :");
-		// 	}
-
-		// 	// Column 3
-		// 	if (column == 2)
-		// 	{
-		// 		printf("\tAmount :");
-		// 	}
-
-		// 	printf("%s", value);
-		// 	value = strtok(NULL, ", ");
-		// 	column++;
-		// }
 	}
 	fclose(f);
 	return searchedData;
+}
+
+char *removeLeading(char *str)
+{
+	int idx = 0, j, k = 0;
+
+	char str1[4] = {0};
+	// Iterate String until last
+	// leading space character
+	while (str[idx] == ' ' || str[idx] == '\t' || str[idx] == '\n')
+	{
+		idx++;
+	}
+
+	// Run a for loop from index until the original
+	// string ends and copy the content of str to str1
+	for (j = idx; str[j] != '\0'; j++)
+	{
+		str1[k] = str[j];
+		k++;
+	}
+
+	// Insert a string terminating character
+	// at the end of new string
+	str1[k] = '\0';
+
+	// Print the string with no whitespaces
+	printf("%s", str1);
+	return str1;
 }
 
 void updateTimeArray(int address, block_t *currBlock)
@@ -348,6 +369,7 @@ intptr_t pm_malloc(void *arguments)
 
 		struct arg_struct_malloc *args = arguments;
 		int size = args->size;
+		printf("Size of the malloc array is: %d", size);
 		char byteArray[size];
 		printf("Contents of the array are: ");
 		memcpy(byteArray, args->values, size);
@@ -374,6 +396,7 @@ intptr_t pm_malloc(void *arguments)
 			// If current mem block is free
 			if (currBlock->isFree)
 			{
+
 				// If current memory block has smaller size
 				if (currBlock->size < size)
 				{
@@ -514,14 +537,14 @@ void pm_free(void *arguments)
 				currBlock->isFree = 1;								   // Set memory block to free
 				memset(heap + currBlock->address, 0, currBlock->size); // Nullify the bytes
 				currBlock = currBlock->next;
-				blockSize = blockSize - 1;						   // Set current to next mem block in chain
+				blockSize = blockSize - 1; // Set current to next mem block in chain
 			}
 			pthread_mutex_unlock(&lock);
 			printf("Current blocksize is :%d", blockSize);
 			return;
 		}
 	}
-	
+
 	pthread_mutex_unlock(&lock);
 
 	return;

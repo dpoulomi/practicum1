@@ -17,7 +17,7 @@ time_t times[MAX_BLOCK];
 char *requestMemoryPageInDisk(int pageId);
 intptr_t getLeastRecentlyUsedPageId();
 void pm_malloc_to_disk(intptr_t pageId, char byteArray[]);
-void updateTimeArray(int address, block_t *currBlock);
+void updateTimeArray(intptr_t address, block_t *currBlock);
 int diskPageId = 0;
 char *removeLeading(char *str);
 
@@ -40,23 +40,30 @@ struct arg_struct_free_dump
 	int pageId;
 };
 
+struct arg_struct_request_page
+{
+	intptr_t pageId;
+	char* retValue ;
+};
+
 char heap[HEAP_SIZE] = {0};
 block_t allocMemBlocks[MAX_BLOCK];
 
 int blockSize = 0;
 
-char *requestMemoryPageInMainMemory(intptr_t pageId)
+// char *requestMemoryPageInMainMemory(intptr_t pageId)
+char *requestMemoryPageInMainMemory(void *arguments)
 {
 
-	// pthread_mutex_lock(&lock);
-	// struct arg_struct_free_dump *args = arguments;
+	pthread_mutex_lock(&lock);
+	struct arg_struct_request_page *args = arguments;
+	
+
 	// printf("test");
 	block_t *currBlock = NULL;
 	char searchedData[9] = {0};
 	char *retValue;
-	// char *searchedData ;
-
-	intptr_t address = pageId;
+	intptr_t address = args->pageId;
 	int j = 0;
 	if (address < HEAP_SIZE)
 	{
@@ -66,26 +73,21 @@ char *requestMemoryPageInMainMemory(intptr_t pageId)
 
 			if (currBlock->address == address && currBlock->isFree == 0)
 			{
-				// 	// return *currBlock;
 				printf("Searched data is found in main memory at pageId %d \n", currBlock->address);
-				for (int i = pageId; i < (pageId + 4); i++)
-				{
-					// *(searchedData+j) = heap[i];
+				for (int i = address; i < (address + 4); i++)
+				{	
+					
 					searchedData[j] = heap[i];
 					j++;
 				}
-				// *(searchedData+j) = '\0';
-				// printf("%d", j);
 				searchedData[j] = '\0';
-				updateTimeArray(pageId, currBlock);
-				// for(int i = 0; i < 5; i++)
-				// 	{
-				// 	printf("%c", searchedData[i]);
-				// 	}
-				// pthread_mutex_unlock(&lock);
-				// printf("Inside : %s \n", searchedData);
+				updateTimeArray(address, currBlock);
 				printf("Size of the searched data from main memory is: %d", strlen(searchedData));
+					// args->retValue = searchedData;
+				pthread_mutex_unlock(&lock);
+			
 				return searchedData;
+				//break;
 			}
 		}
 	}
@@ -94,7 +96,7 @@ char *requestMemoryPageInMainMemory(intptr_t pageId)
 	{
 		// page fault happens
 		printf("Data not found in main memory\n");
-		char *retValue = requestMemoryPageInDisk(pageId);
+		char *retValue = requestMemoryPageInDisk(address);
 		for (int i = 0; i < 5; i++)
 		{
 			searchedData[i] = *(retValue + i);
@@ -140,42 +142,9 @@ char *requestMemoryPageInMainMemory(intptr_t pageId)
 			mallocdata.size = 4;
 			pm_malloc(&mallocdata);
 		}
-
-		// old code
-		// // check fr page fault
-		// if (searchedData[0] != NULL)
-		// // if (sizeof(searchedData) == 5)
-		// {
-		// 	//if not present in
-		// 	printf("Data not found in memory and disk and page fault happens");
-		// 	intptr_t pageIdToReplace = getLeastRecentlyUsedPageId();
-		// 	char data[4] = {0};
-		// 	strcpy(data, heap[pageIdToReplace]);
-
-		// 	pm_malloc_to_disk(pageIdToReplace, data);
-		// 	pm_free(pageIdToReplace);
-		// 	struct arg_struct_malloc mallocdata;
-		// 	mallocdata.values = searchedData;
-		// 	mallocdata.size = 4;
-		// 	pm_malloc(&mallocdata);
-		// }
-		// else
-		// {
-		// 	// page fault code
-		// 	intptr_t pageIdToReplace = getLeastRecentlyUsedPageId();
-		// 	pm_free(pageIdToReplace);
-		// 	struct arg_struct_malloc mallocdata;
-		// 	mallocdata.values = searchedData;
-		// 	mallocdata.size = 4;
-		// 	pm_malloc(&mallocdata);
-		// }
 	}
-
-	// add the least recently used page to disk and the searched page to
-	// back to main memory in place of the recently used memory.
-
-	// updateTimeArray(address, currBlock);
-	//  pthread_mutex_unlock(&lock);
+	// args->retValue = searchedData;
+	 pthread_mutex_unlock(&lock);
 	return searchedData;
 }
 intptr_t getLeastRecentlyUsedPageId()
@@ -310,7 +279,7 @@ char *removeLeading(char *str)
 	return str1;
 }
 
-void updateTimeArray(int address, block_t *currBlock)
+void updateTimeArray(intptr_t address, block_t *currBlock)
 {
 	time_t seconds;
 	times[currBlock->address] = seconds;

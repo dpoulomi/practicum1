@@ -15,6 +15,12 @@ struct arg_struct_free_dump
 	int size;
 };
 
+struct arg_struct_request_page
+{
+	intptr_t pageId;
+	char* retValue ;
+};
+
 void print_buffer(char buffer[], int size)
 {
 	printf("Buffer: ");
@@ -52,7 +58,7 @@ int main()
 
 	intptr_t address;
 	
-	pthread_t tid[16];
+	pthread_t tid[17];
 	
 	struct arg_struct_malloc mallocdata1;
 	mallocdata1.values = data;
@@ -147,18 +153,36 @@ int main()
 	printf("the pageId is : %ld \n", address);
 
 
-	
-	//retrive the data from the main memory using the pageId
+//retrive the data from the main memory using the pageId
 	intptr_t searchPageId = 8;
-	// char searchedData[40];
-	char* retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from memory is : %c%c%c%c%c\n", retValue[0], retValue[1], retValue[2], retValue[3]);		
+	char retValue[5] ;
+	struct arg_struct_request_page requestPage;
+	requestPage.pageId = searchPageId;
+	pthread_create(&(tid[13]), NULL, &requestMemoryPageInMainMemory, (void *)&requestPage);
+	pthread_join(tid[13], (void *)&retValue);
+	printf("Data from memory is : %c%c%c%c\n", retValue[0],
+	retValue[1],retValue[2], retValue[3]);		
+
 	// data retreival from disk
-	
 	searchPageId = 44;
-	retValue = requestMemoryPageInMainMemory(searchPageId);	
+	requestPage.pageId = searchPageId;
+	pthread_create(&(tid[14]), NULL, &requestMemoryPageInMainMemory, (void *)&requestPage);
+	pthread_join(tid[14], (void *)&retValue);
 	printf("Data from disk at page id 0 is : %c%c%c%c%c\n", retValue[0], retValue[1], 
-	retValue[2], retValue[3], retValue[4],retValue[5],retValue[6],retValue[7],retValue[8]);
+	retValue[2], retValue[3], retValue[4]);	
+
+	
+//corrrect output
+	// char* retValue = requestMemoryPageInMainMemory(searchPageId);
+	// printf("Data from memory is : %c%c%c%c%c\n", retValue[0], retValue[1], retValue[2], retValue[3]);		
+	
+	
+	// searchPageId = 44;
+	// retValue = requestMemoryPageInMainMemory(searchPageId);	
+	// printf("Data from disk at page id 0 is : %c%c%c%c%c\n", retValue[0], retValue[1], 
+	// retValue[2], retValue[3], retValue[4],retValue[5],retValue[6],retValue[7],retValue[8]);
+//end of correct op
+
 	// strcpy(searchedData, requestMemoryPageInMainMemory(searchPageId));
 	// printf("Data from disk is %s", searchedData);
 
@@ -170,51 +194,14 @@ int main()
 	
 
 	
-	pthread_create(&(tid[13]), NULL, &dump_heap, (void *)&dump);
-	pthread_join(tid[13], NULL);
+	pthread_create(&(tid[15]), NULL, &dump_heap, (void *)&dump);
+	pthread_join(tid[15], NULL);
 	
 
 	// trying to add another data to main memory, but due to lack of memory the 
 	//data should be saved in the disk.
 
-	//}
-	// pthread_t tid1[2];
-	// struct arg_struct_free_dump free;
-	// // for (int i = 0; i < 12; i += 2)
-	// // {
-
-	// 	free.size = 4;
-	// 	// this thread will free memory from heap sequentially in the order added
-	// 	pthread_create(&(tid1[0]), NULL, &pm_free, (void *)&free);
-	// 	pthread_join(&tid1[0], NULL);
-	// 	// this set of threads will print the entire heap
-	// 	pthread_create(&(tid1[1]), NULL, &dump_heap, (void *)&dump);
-	// 	pthread_join(tid1[1], NULL);
-	// //}
-
-	// char data1 = {'A', 'B', 'C', 'D'};
-	// // malloc, dump, free and dump
-	// pthread_t tid2[24];
-	// for (int i = 0; i < 24; i += 4)
-	// {
-
-	// 	mallocdata1.values = data1[i / 4];
-	// 	mallocdata1.size = 3;
-	// 	// this thread will allocate memory in heap as per the mallocdata without any overlap
-	// 	pthread_create(&(tid2[i]), NULL, &pm_malloc, (void *)&mallocdata1);
-	// 	pthread_join(tid2[i], (void *)&address);
-	// 	// this set of threads will print the entire heap so far
-	// 	pthread_create(&(tid2[i + 1]), NULL, &dump_heap, (void *)&dump);
-	// 	pthread_join(tid2[i + 1], NULL);
-
-	// 	free.size = 0;
-	// 	// this thread will free memory from heap sequentially in the order added
-	// 	pthread_create(&(tid2[i + 2]), NULL, &pm_free, (void *)&free);
-	// 	pthread_join(&tid2[i + 2], NULL);
-	// 	// this set of threads will print the entire heap
-	// 	pthread_create(&(tid2[i + 3]), NULL, &dump_heap, (void *)&dump);
-	// 	pthread_join(tid2[i + 3], NULL);
-	// }
+	
 	pthread_exit(NULL);
 
 	return 0;

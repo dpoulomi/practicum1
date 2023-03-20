@@ -232,7 +232,6 @@ char *requestMemoryPageInDisk(int pageId)
 					j++;
 				}
 				printf("Found data in disk is: %s\n", searchedData);
-				printf("Found data in disk is: 1 - %c 2 - %c 3 - %c 4 - %c 5 - %c 6 - %c\n", token[0], token[1], token[2], token[3], token[4],token[5]);
 				printf("size of data from disk is : %d\n", strlen(token));
 			
 				// printf("Found trimmed data  in disk is: %s\n", str1);
@@ -247,34 +246,6 @@ char *requestMemoryPageInDisk(int pageId)
 	return searchedData;
 }
 
-// char *removeLeading(char *str)
-// {
-// 	int idx = 0, j, k = 0;
-
-// 	char str1[4] = {0};
-// 	// Iterate String until last
-// 	// leading space character
-// 	while (str[idx] == ' ' || str[idx] == '\t' || str[idx] == '\n')
-// 	{
-// 		idx++;
-// 	}
-
-// 	// Run a for loop from index until the original
-// 	// string ends and copy the content of str to str1
-// 	for (j = idx; str[j] != '\0'; j++)
-// 	{
-// 		str1[k] = str[j];
-// 		k++;
-// 	}
-
-// 	// Insert a string terminating character
-// 	// at the end of new string
-// 	str1[k] = '\0';
-
-// 	// Print the string with no whitespaces
-// 	printf("%s", str1);
-// 	return str1;
-// }
 
 void updateTimeArray(int address)
 {
@@ -436,7 +407,8 @@ intptr_t pm_malloc(void *arguments)
 					memcpy(heap + currBlock->address, byteArray, size);
 					currBlock->next = NULL; // Nullify chain
 					printf("Current blocksize is :%d", blockSize);
-					allocMemBlocks[blockSize++] = *currBlock;
+					// allocMemBlocks[blockSize++] = *currBlock;
+					blockSize = blockSize + 1;
 					printf("Current blocksize is :%d", blockSize);
 					updateTimeArray(currBlock->address);
 					pthread_mutex_unlock(&lock);
@@ -509,7 +481,7 @@ void pm_free(void *arguments)
 	for (int i = 0; i < blockSize; i++)
 	{
 		block_t *currBlock = &(allocMemBlocks[i]);
-
+		printf("Current  address is %d\n", currBlock->address);
 		if (currBlock->address == address && currBlock->isFree == 0)
 		{
 			while (currBlock != NULL)

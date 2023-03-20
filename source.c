@@ -15,12 +15,6 @@ struct arg_struct_free_dump
 	int size;
 };
 
-struct arg_struct_request_page
-{
-	intptr_t pageId;
-	char* retValue ;
-};
-
 void print_buffer(char buffer[], int size)
 {
 	printf("Buffer: ");
@@ -45,21 +39,21 @@ int main()
 	char data6[4] = {'y', 'z', 'A', 'B'};
 	char data7[4] = {'C', 'D', 'E', 'F'};
 	char data8[4] = {'G', 'H', 'I', 'J'};
-	char data9[4] = {'K', 'L', 'M', 'N'};	
-	char data10[4] ={'O', 'P', 'Q', 'R'};
-	char data11[4] ={'S', 'T', 'U', 'V'};
+	char data9[4] = {'K', 'L', 'M', 'N'};
+	char data10[4] = {'O', 'P', 'Q', 'R'};
+	char data11[4] = {'S', 'T', 'U', 'V'};
+	char data12[4] = {'W', 'X', 'Y', 'Z'};
 
-
-		// {'d', 'e', 'f'},
-		// {'g', 'h', 'i'},
-		// {'j', 'k', 'l'},
-		// {'m', 'n', 'o'},
-		// {'p', 'q', 'r'}};
+	// {'d', 'e', 'f'},
+	// {'g', 'h', 'i'},
+	// {'j', 'k', 'l'},
+	// {'m', 'n', 'o'},
+	// {'p', 'q', 'r'}};
 
 	intptr_t address;
-	
-	pthread_t tid[17];
-	
+
+	pthread_t tid[16];
+
 	struct arg_struct_malloc mallocdata1;
 	mallocdata1.values = data;
 	mallocdata1.size = 4;
@@ -137,9 +131,8 @@ int main()
 	pthread_join(tid[11], (void *)&address);
 	printf("the pageId is : %ld \n", address);
 
+	// this set of threads will print the entire heap so far
 
-		// this set of threads will print the entire heap so far
-		
 	struct arg_struct_free_dump dump;
 	dump.size = 40;
 	pthread_create(&(tid[10]), NULL, &dump_heap, (void *)&dump);
@@ -152,56 +145,62 @@ int main()
 	pthread_join(tid[12], (void *)&address);
 	printf("the pageId is : %ld \n", address);
 
+	struct arg_struct_malloc mallocdata13;
+	mallocdata13.values = data12;
+	mallocdata13.size = 4;
+	pthread_create(&(tid[13]), NULL, &pm_malloc, (void *)&mallocdata13);
+	pthread_join(tid[13], (void *)&address);
+	printf("the pageId is : %ld \n", address);
 
-//retrive the data from the main memory using the pageId
+	// retrive the data from the main memory using the pageId
 	intptr_t searchPageId = 8;
-	char retValue[5] ;
-	struct arg_struct_request_page requestPage;
-	requestPage.pageId = searchPageId;
-	pthread_create(&(tid[13]), NULL, &requestMemoryPageInMainMemory, (void *)&requestPage);
-	pthread_join(tid[13], (void *)&retValue);
-	printf("Data from memory is : %c%c%c%c\n", retValue[0],
-	retValue[1],retValue[2], retValue[3]);		
-
+	// char searchedData[40];
+	char *retValue = requestMemoryPageInMainMemory(searchPageId);
+	printf("Data from memory is : %c%c%c%c%c\n", retValue[0], retValue[1], retValue[2], retValue[3]);
 	// data retreival from disk
+
 	searchPageId = 44;
-	requestPage.pageId = searchPageId;
-	pthread_create(&(tid[14]), NULL, &requestMemoryPageInMainMemory, (void *)&requestPage);
-	pthread_join(tid[14], (void *)&retValue);
-	printf("Data from disk at page id 0 is : %c%c%c%c%c\n", retValue[0], retValue[1], 
-	retValue[2], retValue[3], retValue[4]);	
-
-	
-//corrrect output
-	// char* retValue = requestMemoryPageInMainMemory(searchPageId);
-	// printf("Data from memory is : %c%c%c%c%c\n", retValue[0], retValue[1], retValue[2], retValue[3]);		
-	
-	
-	// searchPageId = 44;
-	// retValue = requestMemoryPageInMainMemory(searchPageId);	
-	// printf("Data from disk at page id 0 is : %c%c%c%c%c\n", retValue[0], retValue[1], 
-	// retValue[2], retValue[3], retValue[4],retValue[5],retValue[6],retValue[7],retValue[8]);
-//end of correct op
-
+	retValue = requestMemoryPageInMainMemory(searchPageId);
+	printf("Data from disk at page id 0 is : %c%c%c%c%c\n", retValue[0], retValue[1],
+		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
 	// strcpy(searchedData, requestMemoryPageInMainMemory(searchPageId));
 	// printf("Data from disk is %s", searchedData);
 
-	// searchPageId = 40;
-	// retValue = requestMemoryPageInMainMemory(searchPageId);	
-	// printf("Data from disk at page id %d is : %c%c%c%c%c\n",searchPageId, retValue[0], retValue[1], 
-	// retValue[2], retValue[3], retValue[4],retValue[5],retValue[6],retValue[7],retValue[8]);
+	searchPageId = 40;
+	retValue = requestMemoryPageInMainMemory(searchPageId);
+	printf("Data from disk at page id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
+		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
 
-	
+	pthread_create(&(tid[14]), NULL, &dump_heap, (void *)&dump);
+	pthread_join(tid[14], NULL);
 
-	
+	searchPageId = 4;
+	// char searchedData[40];
+	char *retValue = requestMemoryPageInMainMemory(searchPageId);
+	printf("Data from memory is : %c%c%c%c%c\n", retValue[0], retValue[1], retValue[2], retValue[3]);
+
+	searchPageId = 48;
+	retValue = requestMemoryPageInMainMemory(searchPageId);
+	printf("Data from disk at page id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
+		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
+
 	pthread_create(&(tid[15]), NULL, &dump_heap, (void *)&dump);
 	pthread_join(tid[15], NULL);
-	
 
-	// trying to add another data to main memory, but due to lack of memory the 
-	//data should be saved in the disk.
+	// freeing memory will straight away load the data from the mentioned pageId to main memory
+	struct arg_struct_free_dump free;
+	free.size = 36;
+	pthread_create(&(tid[16]), NULL, &pm_free, (void *)&free);
+	pthread_join(tid[16], NULL);
 
-	
+	searchPageId = 0;
+	retValue = requestMemoryPageInMainMemory(searchPageId);
+	printf("Data from disk at page id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
+		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
+
+	// trying to add another data to main memory, but due to lack of memory the
+	// data should be saved in the disk.
+
 	pthread_exit(NULL);
 
 	return 0;

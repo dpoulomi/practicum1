@@ -13,12 +13,13 @@
 #define MAX_BLOCK 10
 #define page_size 4
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-time_t times[MAX_BLOCK];
+int times[HEAP_SIZE] = {0};
 char *requestMemoryPageInDisk(int pageId);
 intptr_t getLeastRecentlyUsedPageId();
 void pm_malloc_to_disk(intptr_t pageId, char byteArray[]);
-void updateTimeArray(intptr_t address, block_t *currBlock);
+void updateTimeArray(int address);
 int diskPageId = 0;
+int timeCounter = 0;
 char *removeLeading(char *str);
 
 struct MemoryBlock
@@ -40,30 +41,23 @@ struct arg_struct_free_dump
 	int pageId;
 };
 
-struct arg_struct_request_page
-{
-	intptr_t pageId;
-	char* retValue ;
-};
-
 char heap[HEAP_SIZE] = {0};
 block_t allocMemBlocks[MAX_BLOCK];
 
 int blockSize = 0;
 
-// char *requestMemoryPageInMainMemory(intptr_t pageId)
-char *requestMemoryPageInMainMemory(void *arguments)
+char *requestMemoryPageInMainMemory(intptr_t pageId)
 {
 
-	pthread_mutex_lock(&lock);
-	struct arg_struct_request_page *args = arguments;
-	
-
+	// pthread_mutex_lock(&lock);
+	// struct arg_struct_free_dump *args = arguments;
 	// printf("test");
 	block_t *currBlock = NULL;
 	char searchedData[9] = {0};
 	char *retValue;
-	intptr_t address = args->pageId;
+	// char *searchedData ;
+
+	intptr_t address = pageId;
 	int j = 0;
 	if (address < HEAP_SIZE)
 	{
@@ -73,21 +67,26 @@ char *requestMemoryPageInMainMemory(void *arguments)
 
 			if (currBlock->address == address && currBlock->isFree == 0)
 			{
+				// 	// return *currBlock;
 				printf("Searched data is found in main memory at pageId %d \n", currBlock->address);
-				for (int i = address; i < (address + 4); i++)
-				{	
-					
+				for (int i = pageId; i < (pageId + 4); i++)
+				{
+					// *(searchedData+j) = heap[i];
 					searchedData[j] = heap[i];
 					j++;
 				}
+				// *(searchedData+j) = '\0';
+				// printf("%d", j);
 				searchedData[j] = '\0';
-				updateTimeArray(address, currBlock);
+				updateTimeArray(pageId);
+				// for(int i = 0; i < 5; i++)
+				// 	{
+				// 	printf("%c", searchedData[i]);
+				// 	}
+				// pthread_mutex_unlock(&lock);
+				// printf("Inside : %s \n", searchedData);
 				printf("Size of the searched data from main memory is: %d", strlen(searchedData));
-					// args->retValue = searchedData;
-				pthread_mutex_unlock(&lock);
-			
 				return searchedData;
-				//break;
 			}
 		}
 	}
@@ -96,20 +95,20 @@ char *requestMemoryPageInMainMemory(void *arguments)
 	{
 		// page fault happens
 		printf("Data not found in main memory\n");
-		char *retValue = requestMemoryPageInDisk(address);
+		char *retValue = requestMemoryPageInDisk(pageId);
 		for (int i = 0; i < 5; i++)
 		{
 			searchedData[i] = *(retValue + i);
 			// printf("%c\n", searchedData[i]);
 		}
-		// searchedData[5] = '\0';
-		// printf("Gibberish %s\n", searchedData);
+		
 
 		// if the main memory is not full add the retrieved data above
 		// from secondary memory to main memory
-		printf("%d \n", sizeof(searchedData));
+		
 		if (searchedData[0] != NULL && (blockSize < MAX_BLOCK))
 		{
+			printf("Entering if block");
 			struct arg_struct_malloc mallocdata;
 			mallocdata.values = searchedData;
 			mallocdata.size = 4;
@@ -119,23 +118,24 @@ char *requestMemoryPageInMainMemory(void *arguments)
 		{
 			// since no space in main memory we need to replace an exisiting least recently used page
 			// from the main memory.
+			printf("Entering else block");
 			int k = 0;
+			int freePageId ;
 			intptr_t pageIdToReplace = getLeastRecentlyUsedPageId();
+			freePageId = pageIdToReplace;
 			printf("Page id to replace from main memory is %d :\n", pageIdToReplace);
 			char data[4] = {0};
 			for (int i = pageIdToReplace; i < (pageIdToReplace + 4); i++)
 			{
-				// *(searchedData+j) = heap[i];
 				data[k] = heap[i];
 				k++;
 			}
-			// *(searchedData+j) = '\0';
-			// printf("%d", j);
 			data[k] = '\0';
 			printf("Data to be saved to disk due to least recently used %s\n", data);
-			pm_malloc_to_disk(pageIdToReplace, data);
+			pm_malloc_to_disk(address, data);
 			struct arg_struct_free_dump toFreePageId;
-			toFreePageId.pageId = pageIdToReplace;
+			toFreePageId.pageId = freePageId;
+			// printf("Sending page id to free is %d \n", freePageId);
 			pm_free(&toFreePageId);
 			struct arg_struct_malloc mallocdata;
 			mallocdata.values = searchedData;
@@ -143,21 +143,30 @@ char *requestMemoryPageInMainMemory(void *arguments)
 			pm_malloc(&mallocdata);
 		}
 	}
-	// args->retValue = searchedData;
-	 pthread_mutex_unlock(&lock);
+
+	// add the least recently used page to disk and the searched page to
+	// back to main memory in place of the recently used memory.
+
+	// updateTimeArray(address, currBlock);
+	//  pthread_mutex_unlock(&lock);
 	return searchedData;
 }
 intptr_t getLeastRecentlyUsedPageId()
 {
 	intptr_t leastRecentlyUsedPage = times[0];
-	for (int i = 1; i < sizeof(times); i++)
+	int leastTime = 0;
+	// 	printf("Time %d at %d \n" , times[0], 0);
+	// printf("LRU times array size is %d,%d", strlen(times), sizeof(times));
+	for (int i = 0; i < HEAP_SIZE ; i+=4)
 	{
+		printf("Time %d at %d \n", times[i], i);
 		if (times[i] < leastRecentlyUsedPage)
 		{
 			leastRecentlyUsedPage = times[i];
+			leastTime = i;
 		}
 	}
-	return leastRecentlyUsedPage;
+	return leastTime;
 }
 
 FILE *f;
@@ -172,13 +181,13 @@ void pm_malloc_to_disk(intptr_t pageId, char byteArray[4])
 	}
 	/* print some text */
 	// fprintf(f, "PageId, Data\n");
-	for (int i = 0; i < 4; i++)
-	{
-		printf("%c", byteArray[i]);
-	}
+	// for (int i = 0; i < 4; i++)
+	// {
+	// 	printf("%c", byteArray[i]);
+	// }
 
 	// printf("Starting pm_malloc! %d \n", blockSize);
-	printf("\n");
+	// printf("\n");
 	fprintf(f, "%ld, %s\n", pageId, byteArray);
 	printf("Data saved to csv file \n");
 	fclose(f);
@@ -189,6 +198,7 @@ char *requestMemoryPageInDisk(int pageId)
 	printf("Reading the backing_store.. \n");
 
 	f = fopen("backing_store.csv", "r");
+	// FILE *write = fopen("backing_store.csv", "w");
 	if (f == NULL)
 	{
 		printf("Error opening file!\n");
@@ -209,10 +219,6 @@ char *requestMemoryPageInDisk(int pageId)
 		int j = 0;
 		while (token)
 		{
-			// printf("read all the values in a row\n");
-			// Just printing each integer here but handle as needed
-			// int n = atoi(token);
-			// printf("%d\n", n);
 			if (column == 0 && atoi(token) == pageId)
 			{
 				found = true;
@@ -225,15 +231,6 @@ char *requestMemoryPageInDisk(int pageId)
 					searchedData[j] = token[i];
 					j++;
 				}
-				// searchedData[4] = '\0';
-				// printf("Found data in disk is: %s\n", searchedData);
-
-				// char str1[4] = {0};
-
-				// char *str1 = removeLeading(token);
-
-
-				// printf("Found data in disk is: %s\n", token);
 				printf("Found data in disk is: %s\n", searchedData);
 				printf("Found data in disk is: 1 - %c 2 - %c 3 - %c 4 - %c 5 - %c 6 - %c\n", token[0], token[1], token[2], token[3], token[4],token[5]);
 				printf("size of data from disk is : %d\n", strlen(token));
@@ -250,39 +247,42 @@ char *requestMemoryPageInDisk(int pageId)
 	return searchedData;
 }
 
-char *removeLeading(char *str)
+// char *removeLeading(char *str)
+// {
+// 	int idx = 0, j, k = 0;
+
+// 	char str1[4] = {0};
+// 	// Iterate String until last
+// 	// leading space character
+// 	while (str[idx] == ' ' || str[idx] == '\t' || str[idx] == '\n')
+// 	{
+// 		idx++;
+// 	}
+
+// 	// Run a for loop from index until the original
+// 	// string ends and copy the content of str to str1
+// 	for (j = idx; str[j] != '\0'; j++)
+// 	{
+// 		str1[k] = str[j];
+// 		k++;
+// 	}
+
+// 	// Insert a string terminating character
+// 	// at the end of new string
+// 	str1[k] = '\0';
+
+// 	// Print the string with no whitespaces
+// 	printf("%s", str1);
+// 	return str1;
+// }
+
+void updateTimeArray(int address)
 {
-	int idx = 0, j, k = 0;
-
-	char str1[4] = {0};
-	// Iterate String until last
-	// leading space character
-	while (str[idx] == ' ' || str[idx] == '\t' || str[idx] == '\n')
-	{
-		idx++;
-	}
-
-	// Run a for loop from index until the original
-	// string ends and copy the content of str to str1
-	for (j = idx; str[j] != '\0'; j++)
-	{
-		str1[k] = str[j];
-		k++;
-	}
-
-	// Insert a string terminating character
-	// at the end of new string
-	str1[k] = '\0';
-
-	// Print the string with no whitespaces
-	printf("%s", str1);
-	return str1;
-}
-
-void updateTimeArray(intptr_t address, block_t *currBlock)
-{
-	time_t seconds;
-	times[currBlock->address] = seconds;
+	// time_t seconds;
+	timeCounter = timeCounter + 1;
+	timeCounter = timeCounter + times[address];
+	times[address] = timeCounter;
+	printf("The time at address %d is %d",address, times[address] );
 }
 
 intptr_t get_max_addr()
@@ -372,7 +372,9 @@ intptr_t pm_malloc(void *arguments)
 					// printf("inside currBlock->size < size \n");
 					// fflush(stdout);
 					currBlock->isFree = 0; // Set current block to not free
+					printf("Entering first condition");
 					memcpy(heap + currBlock->address, byteArray + arrayPtr, currBlock->size);
+					updateTimeArray(currBlock->address);
 					size -= currBlock->size;	 // Change left-over byte size
 					arrayPtr += currBlock->size; // Increment array position
 
@@ -404,9 +406,11 @@ intptr_t pm_malloc(void *arguments)
 					{
 						prevBlock->next = currBlock; // Link prev block to current block
 					}
+					printf("Entering second condition");
 					memcpy(heap + currBlock->address, byteArray + arrayPtr, size);
 
 					// "Split" original block into a new block
+					updateTimeArray(currBlock->address);
 					block_t newBlock;
 					newBlock.isFree = 1;						  // Set new block to free
 					newBlock.address = currBlock->address + size; // Address set to first byte of leftover space
@@ -416,6 +420,7 @@ intptr_t pm_malloc(void *arguments)
 
 					currBlock->size = size; // Reduce size
 					currBlock->next = NULL; // Set next to NULL
+
 					pthread_mutex_unlock(&lock);
 					// printf("Write complete! in pm malloc");
 					// fflush(stdout);
@@ -427,10 +432,13 @@ intptr_t pm_malloc(void *arguments)
 					// printf("inside else \n");
 					// fflush(stdout);
 					currBlock->isFree = 0; // Set current block to not free
+					printf("Entering third condition");
 					memcpy(heap + currBlock->address, byteArray, size);
 					currBlock->next = NULL; // Nullify chain
-					time_t seconds;
-					times[currBlock->address] = seconds;
+					printf("Current blocksize is :%d", blockSize);
+					allocMemBlocks[blockSize++] = *currBlock;
+					printf("Current blocksize is :%d", blockSize);
+					updateTimeArray(currBlock->address);
 					pthread_mutex_unlock(&lock);
 					return currBlock->address; // Return address
 				}
@@ -445,9 +453,12 @@ intptr_t pm_malloc(void *arguments)
 		newBlock.size = size;
 		newBlock.next = NULL;
 		allocMemBlocks[blockSize++] = newBlock;
+		printf("Entering fourth condition");
 		memcpy(heap + newBlock.address, byteArray + arrayPtr, size);
-		time_t seconds;
-		times[newBlock.address] = seconds;
+		printf("Current blocksize is :%d", blockSize);
+		// time_t seconds;
+		updateTimeArray(newBlock.address);
+		// times[newBlock.address] = timeCounter +;
 		// memcpy(heap, byteArray + arrayPtr, size);
 
 		// Check if start block is null

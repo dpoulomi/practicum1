@@ -124,89 +124,113 @@ int main()
 	pthread_join(tid[9], (void *)&address);
 	printf("the pageId is : %ld \n", address);
 
+	struct arg_struct_free_dump dump;
+	dump.size = 40;
+	pthread_create(&(tid[10]), NULL, &dump_heap, (void *)&dump);
+	pthread_join(tid[10], NULL);
+
 	struct arg_struct_malloc mallocdata11;
 	mallocdata11.values = data10;
 	mallocdata11.size = 4;
 	pthread_create(&(tid[11]), NULL, &pm_malloc, (void *)&mallocdata11);
 	pthread_join(tid[11], (void *)&address);
-	printf("the pageId is : %ld \n", address);
+	// printf("the pageId is : %ld \n", address);
 
 	// this set of threads will print the entire heap so far
 
-	struct arg_struct_free_dump dump;
-	dump.size = 40;
-	pthread_create(&(tid[10]), NULL, &dump_heap, (void *)&dump);
-	pthread_join(tid[10], NULL);
+	
 
 	struct arg_struct_malloc mallocdata12;
 	mallocdata12.values = data11;
 	mallocdata12.size = 4;
 	pthread_create(&(tid[12]), NULL, &pm_malloc, (void *)&mallocdata12);
 	pthread_join(tid[12], (void *)&address);
-	printf("the pageId is : %ld \n", address);
+	// printf("the pageId is : %ld \n", address);
 
 	struct arg_struct_malloc mallocdata13;
 	mallocdata13.values = data12;
 	mallocdata13.size = 4;
 	pthread_create(&(tid[13]), NULL, &pm_malloc, (void *)&mallocdata13);
 	pthread_join(tid[13], (void *)&address);
-	printf("the pageId is : %ld \n", address);
+	// printf("the pageId is : %ld \n", address);
+	printf("\n");
+	printf("\n");
 
-	//retrive the data from the main memory using the pageId
-	intptr_t searchPageId = 8;
-	char *retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from memory at page id %d is : %c%c%c%c%c\n",searchPageId, retValue[0], retValue[1], retValue[2], retValue[3]);
-	//data retreival from disk
+	// retrive the data from the main memory using the pageId
+intptr_t searchPageId = 8;
+printf("Searching for page id %d\n", searchPageId);
+char *retValue = requestMemoryPageInMainMemory(searchPageId);
+printf("Data from main memory at page id %d is : %c%c%c%c\n", searchPageId, retValue[0], retValue[1], retValue[2], retValue[3]);
+printf("\n");
+printf("\n");
 
-	searchPageId = 44;
-	retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from disk at frame id %d is : %c%c%c%c%c\n",  searchPageId, retValue[0], retValue[1],
-		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
-	
+// data retreival from disk
+searchPageId = 44;
+printf("Searching for page id %d\n", searchPageId);
+retValue = requestMemoryPageInMainMemory(searchPageId);
+printf("Data from disk at frame id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
+	   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
+printf("\n");
+printf("\n");
 
-	searchPageId = 40;
-	retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from disk at frame id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
-		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
+searchPageId = 40;
+printf("Searching for page id %d\n", searchPageId);
+retValue = requestMemoryPageInMainMemory(searchPageId);
+printf("Data from disk at frame id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
+	   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
 
-	pthread_create(&(tid[14]), NULL, &dump_heap, (void *)&dump);
-	pthread_join(tid[14], NULL);
+pthread_create(&(tid[14]), NULL, &dump_heap, (void *)&dump);
+pthread_join(tid[14], NULL);
+printf("\n");
+printf("\n");
 
-	searchPageId = 4;
-	retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from memory at pageId 4 is : %c%c%c%c%c\n", retValue[0], retValue[1], retValue[2], retValue[3]);
+searchPageId = 4;
+printf("Searching for page id %d\n", searchPageId);
+retValue = requestMemoryPageInMainMemory(searchPageId);
+printf("Data from memory at pageId 4 is : %c%c%c%c%c\n", retValue[0], retValue[1], retValue[2], retValue[3]);
+printf("\n");
+printf("\n");
 
-	searchPageId = 48;
-	retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from disk at frame id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
-		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
+searchPageId = 48;
+printf("Searching for page id %d\n", searchPageId);
+retValue = requestMemoryPageInMainMemory(searchPageId);
+printf("Data from disk at frame id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
+	   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
 
-	pthread_create(&(tid[15]), NULL, &dump_heap, (void *)&dump);
-	pthread_join(tid[15], NULL);
+pthread_create(&(tid[15]), NULL, &dump_heap, (void *)&dump);
+pthread_join(tid[15], NULL);
+printf("\n");
+printf("\n");
 
-	// // freeing memory will straight away load the data from the mentioned pageId to main memory
-	struct arg_struct_free_dump free;
-	free.size = 36;
-	pthread_create(&(tid[16]), NULL, &pm_free, (void *)&free);
-	pthread_join(tid[16], NULL);
+// // freeing memory will straight away load the data from the mentioned pageId to main memory
+struct arg_struct_free_dump free;
+free.size = 36;
+pthread_create(&(tid[16]), NULL, &pm_free, (void *)&free);
+pthread_join(tid[16], NULL);
 
-	pthread_create(&(tid[17]), NULL, &dump_heap, (void *)&dump);
-	pthread_join(tid[17], NULL);
+pthread_create(&(tid[17]), NULL, &dump_heap, (void *)&dump);
+pthread_join(tid[17], NULL);
+printf("\n");
+printf("\n");
 
-	searchPageId = 0;
-	retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from disk at page id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
-		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
+searchPageId = 0;
+printf("Searching for page id %d\n", searchPageId);
+retValue = requestMemoryPageInMainMemory(searchPageId);
+printf("Data from disk at page id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
+	   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
+printf("\n");
+printf("\n");
 
-	searchPageId = 52;
-	retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from disk at page id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
-		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
+searchPageId = 52;
+printf("Searching for page id %d\n", searchPageId);
+retValue = requestMemoryPageInMainMemory(searchPageId);
+printf("Data from disk at page id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
+	   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
 
-	pthread_create(&(tid[18]), NULL, &dump_heap, (void *)&dump);
-	pthread_join(tid[18], NULL);
+pthread_create(&(tid[18]), NULL, &dump_heap, (void *)&dump);
+pthread_join(tid[18], NULL);
 
-	pthread_exit(NULL);
+pthread_exit(NULL);
 
-	return 0;
+return 0;
 }

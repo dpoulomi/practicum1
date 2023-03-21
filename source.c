@@ -154,20 +154,19 @@ int main()
 
 	//retrive the data from the main memory using the pageId
 	intptr_t searchPageId = 8;
-	// char searchedData[40];
 	char *retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from memory is : %c%c%c%c%c\n", retValue[0], retValue[1], retValue[2], retValue[3]);
+	printf("Data from memory at page id %d is : %c%c%c%c%c\n",searchPageId, retValue[0], retValue[1], retValue[2], retValue[3]);
 	//data retreival from disk
 
 	searchPageId = 44;
 	retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from disk at page id 0 is : %c%c%c%c%c\n", retValue[0], retValue[1],
+	printf("Data from disk at frame id %d is : %c%c%c%c%c\n",  searchPageId, retValue[0], retValue[1],
 		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
 	
 
 	searchPageId = 40;
 	retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from disk at page id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
+	printf("Data from disk at frame id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
 		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
 
 	pthread_create(&(tid[14]), NULL, &dump_heap, (void *)&dump);
@@ -175,11 +174,11 @@ int main()
 
 	searchPageId = 4;
 	retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from memory is : %c%c%c%c%c\n", retValue[0], retValue[1], retValue[2], retValue[3]);
+	printf("Data from memory at pageId 4 is : %c%c%c%c%c\n", retValue[0], retValue[1], retValue[2], retValue[3]);
 
 	searchPageId = 48;
 	retValue = requestMemoryPageInMainMemory(searchPageId);
-	printf("Data from disk at page id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
+	printf("Data from disk at frame id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
 		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
 
 	pthread_create(&(tid[15]), NULL, &dump_heap, (void *)&dump);
@@ -199,7 +198,7 @@ int main()
 	printf("Data from disk at page id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
 		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
 
-	searchPageId = 48;
+	searchPageId = 52;
 	retValue = requestMemoryPageInMainMemory(searchPageId);
 	printf("Data from disk at page id %d is : %c%c%c%c%c\n", searchPageId, retValue[0], retValue[1],
 		   retValue[2], retValue[3], retValue[4], retValue[5], retValue[6], retValue[7], retValue[8]);
